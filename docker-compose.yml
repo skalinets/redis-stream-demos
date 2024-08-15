@@ -1,0 +1,10 @@
+services:
+  redis:
+    image: 'bitnami/redis:latest'
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    # make it available on the host machine
+    ports:
+      - '6379:6379'
+    # networks:
+    #   - app-tier
