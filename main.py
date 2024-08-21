@@ -1,77 +1,68 @@
-from fasthtml.common import (
-    RedirectResponse,
-    fast_app,
-    serve,
-    Div,
-    P,
-    Form,
-    Group,
-    # mk_input,
-    Button,
-    Card,
-    Ul,
-    Titled,
-    Input,
-    Main,
-    H1,
-    A,
-)
-from fasthtml import FastHTML
+import fasthtml.common as fh
 
-from chapter1 import get_articles, post_article
+from chapter1 import article_vote, get_articles, post_article
 from redis import Redis
 from icecream import ic
+from faker import Faker
 
-app = FastHTML()
-# messages = ["This is a message, which will get rendered as a paragraph"]
+app, rt = fh.fast_app(live=True)
 
 
 def _show_article(article):
     # ic(article[b"title"])
-    return Card(
-        Titled(article["title"], article["poster"]),
-        P(article["votes"]),
-        P(article["time"]),
+    ic(article["id"])
+    return fh.Card(
+        fh.P(article["title"], article["poster"]),
+        fh.P(article["votes"]),
+        fh.Form(
+            fh.Hidden(name="article_id", value=article["id"]),
+            fh.Button("Vote"),
+            hx_post="/vote",
+            hx_target="#messages",
+        ),
     )
+
 
 conn = Redis("localhost", 6379, decode_responses=True)
 
-@app.get("/") # pyright: ignore[]
-def home():
+
+def _show_all_articles():
     messages = get_articles(conn, 1)
-    ic(messages)
-    return Main(
-        H1("Messages"),
-        Form(
-            Input(type="text", name="title", placeholder="title"),
-            Input(type="text", name="user", placeholder="user"),
-            Button("Submit"),
-            action="/",
-            method="post",
+    # ic(messages)
+    return fh.Div(*[_show_article(m) for m in messages])
+
+
+@rt("/")  # pyright: ignore[]
+def get():
+    return fh.Main(
+        fh.H1("Messages FOO"),
+        fh.Form(
+            fh.Input(type="text", name="title", placeholder="title"),
+            fh.Input(type="text", name="user", placeholder="user"),
+            fh.Button("Submit"),
+            hx_post="/add",
+            hx_target="#messages",
         ),
-        *[_show_article(msg) for msg in messages],
-        # A("Link to Page 2 (to add messages)", href="/page2"),
-    )
-
-
-@app.get("/page2") # pyright: ignore[]
-def page2():
-    return Main(
-        P("Add a message with the form below:"),
-        Form(
-            Input(type="text", name="title", placeholder="title"),
-            Input(type="text", name="user", placeholder="user"),
-            Button("Submit"),
-            action="/",
-            method="post",
+        fh.Div(
+            id="messages",
+            *_show_all_articles(),
         ),
     )
 
 
-@app.post("/") # # pyright: ignore[]
-def add_message(title: str, user: str):
+@rt("/add")  # # pyright: ignore[]
+def post1(title: str, user: str):  # # pyright: ignore[]
     post_article(conn, user, title, "")
-    return home()
+    return _show_all_articles()
 
 
-serve()
+@rt("/vote")  # # pyright: ignore[]
+def post(article_id: str):  # # pyright: ignore[]
+    ic(article_id)
+    faker = Faker()
+    user_name = faker.profile().get("username")
+    article_vote(conn, user_name, article_id)
+    return _show_all_articles()
+
+
+fh.serve()

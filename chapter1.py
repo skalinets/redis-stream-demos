@@ -1,17 +1,21 @@
 from time import time
 from redis import Redis
+from icecream import ic
 
 
 ONE_WEEK_IN_SECONDS = 7 * 86400  # A
 VOTE_SCORE = 432  # A
 
 
-def article_vote(conn: Redis, user, article):
+def article_vote(conn: Redis, user, article_id):
     cutoff = time() - ONE_WEEK_IN_SECONDS      #B
+    article = "article:" + article_id  # D
+    ic(article)
+    # return
     if conn.zscore('time:', article) < cutoff:      #C
         return
 
-    article_id = article.partition(":")[-1]  # D
+    # article_id = article.partition(":")[-1]  # D
     if conn.sadd("voted:" + article_id, user):  # E
         conn.zincrby("score:", VOTE_SCORE, article)  # E
         conn.hincrby(article, "votes", 1)  # E
@@ -42,7 +46,7 @@ def post_article(conn: Redis, user, title, link):
 
     return article_id
 
-ARTICLES_PER_PAGE = 2
+ARTICLES_PER_PAGE = 10
 
 def get_articles(conn: Redis, page, order='score:'):
     start = (page-1) * ARTICLES_PER_PAGE            #A
@@ -52,8 +56,9 @@ def get_articles(conn: Redis, page, order='score:'):
     articles = []
     for id in ids:                                  #C
         article_data = conn.hgetall(id)             #C
-        article_data['id'] = id                     #C
-        articles.append(article_data)               #C
+        if article_data:
+            article_data['id'] = id.split(":")[-1]                     #C
+            articles.append(article_data)               #C
 
     return articles
 

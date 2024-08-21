@@ -1,7 +1,14 @@
 import redis
 
-from chapter1 import add_remove_groups, article_vote, get_articles, get_group_articles, post_article
+from chapter1 import (
+    add_remove_groups,
+    article_vote,
+    get_articles,
+    get_group_articles,
+    post_article,
+)
 from icecream import ic
+
 
 def test_redis():
     r = redis.Redis(host="localhost", port=6379, db=0)
@@ -17,11 +24,13 @@ def test_some_scenario():
     #
     #
     # for i in range(1, 100000):
-    #     post_article(db, f"user{i}", f"title{i}", f"link{i}")
+    i = 100
+    post_article(db, "user12", f"title{i}", f"link{i}")
+    post_article(db, "user12", f"title{i}", f"link{i}")
+    post_article(db, "user12", f"title{i}", f"link{i}")
 
-    
-    # article_vote(db, "user1", "article:2")
-    # article_vote(db, "user4", "article:2")
+    article_vote(db, "user1", "2")
+    article_vote(db, "user4", "2")
     # article_vote(db, "user3", "article:2")
     # article_vote(db, "user1", "article:3")
     # article_vote(db, "user2", "article:3")
@@ -41,9 +50,5 @@ def test_some_scenario():
     # assert as1 == []
     #
 
-    
-
-
-
-
-
+def test_srt():
+    assert ""
