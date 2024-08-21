@@ -16,7 +16,7 @@ def test_redis():
     print(r.get("foo"))
 
 
-def test_some_scenario():
+async def test_some_scenario():
     db = redis.Redis(host="localhost", port=6379, db=0)
     # clean redis
     # db.flushall()
@@ -25,19 +25,19 @@ def test_some_scenario():
     #
     # for i in range(1, 100000):
     i = 100
-    post_article(db, "user12", f"title{i}", f"link{i}")
-    post_article(db, "user12", f"title{i}", f"link{i}")
-    post_article(db, "user12", f"title{i}", f"link{i}")
+    await post_article(db, "user12", f"title{i}", f"link{i}")
+    await post_article(db, "user12", f"title{i}", f"link{i}")
+    await post_article(db, "user12", f"title{i}", f"link{i}")
 
-    article_vote(db, "user1", "2")
-    article_vote(db, "user4", "2")
+    await article_vote(db, "user1", "2")
+    await article_vote(db, "user4", "2")
     # article_vote(db, "user3", "article:2")
     # article_vote(db, "user1", "article:3")
     # article_vote(db, "user2", "article:3")
     # article_vote(db, "user1", "article:4")
 
-    add_remove_groups(db, "2", ["good"])
-    add_remove_groups(db, "9", ["good"])
+    await add_remove_groups(db, "2", ["good"])
+    await add_remove_groups(db, "9", ["good"])
 
     as2 = get_group_articles(db, "good", 1)
     ic(as2)

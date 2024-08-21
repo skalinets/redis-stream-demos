@@ -2,8 +2,8 @@ import fasthtml.common as fh
 import os
 
 from chapter1 import article_vote, get_articles, post_article
-from redis import Redis
-from icecream import ic
+from redis.asyncio.client import Redis
+# from icecream import ic
 from faker import Faker
 
 app, rt = fh.fast_app(live=True)
@@ -11,7 +11,7 @@ app, rt = fh.fast_app(live=True)
 
 def _show_article(article):
     # ic(article[b"title"])
-    ic(article["id"])
+    # ic(article["id"])
     return fh.Card(
         fh.P(article["title"], article["poster"]),
         fh.P(article["votes"]),
@@ -24,17 +24,17 @@ def _show_article(article):
     )
 
 db_server = os.environ.get("REDIS_HOST", "localhost")
-conn = Redis(db_server, 6379, decode_responses=True)
+conn = Redis(host=db_server, port=6379, decode_responses=True)
 
 
-def _show_all_articles():
-    messages = get_articles(conn, 1)
+async def _show_all_articles():
+    messages = await get_articles(conn, 1)
     # ic(messages)
     return fh.Div(*[_show_article(m) for m in messages])
 
 
 @rt("/")  # pyright: ignore[]
-def get():
+async def get():
     return fh.Main(
         fh.H1("Messages FOO"),
         fh.Form(
@@ -46,24 +46,24 @@ def get():
         ),
         fh.Div(
             id="messages",
-            *_show_all_articles(),
+            *(await _show_all_articles()),
         ),
     )
 
 
 @rt("/add")  # # pyright: ignore[]
-def post1(title: str, user: str):  # # pyright: ignore[]
-    post_article(conn, user, title, "")
-    return _show_all_articles()
+async def post1(title: str, user: str):  # # pyright: ignore[]
+    await post_article(conn, user, title, "")
+    return await _show_all_articles()
 
 
 @rt("/vote")  # # pyright: ignore[]
-def post(article_id: str):  # # pyright: ignore[]
-    ic(article_id)
+async def post(article_id: str):  # # pyright: ignore[]
+    # ic(article_id)
     faker = Faker()
     user_name = faker.profile().get("username")
-    article_vote(conn, user_name, article_id)
-    return _show_all_articles()
+    await article_vote(conn, user_name, article_id)
+    return await _show_all_articles()
 
 
 fh.serve()

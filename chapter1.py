@@ -1,36 +1,36 @@
 from time import time
-from redis import Redis
-from icecream import ic
+from redis.asyncio.client import Redis
+# from icecream import ic
 
 
 ONE_WEEK_IN_SECONDS = 7 * 86400  # A
 VOTE_SCORE = 432  # A
 
 
-def article_vote(conn: Redis, user, article_id):
+async def article_vote(conn: Redis, user, article_id):
     cutoff = time() - ONE_WEEK_IN_SECONDS      #B
     article = "article:" + article_id  # D
-    ic(article)
+    # ic(article)
     # return
-    if conn.zscore('time:', article) < cutoff:      #C
+    if await conn.zscore('time:', article) < cutoff:      #C
         return
 
     # article_id = article.partition(":")[-1]  # D
-    if conn.sadd("voted:" + article_id, user):  # E
-        conn.zincrby("score:", VOTE_SCORE, article)  # E
-        conn.hincrby(article, "votes", 1)  # E
+    if await conn.sadd("voted:" + article_id, user):  # E
+        await conn.zincrby("score:", VOTE_SCORE, article)  # E
+        await conn.hincrby(article, "votes", 1)  # E
 
 
-def post_article(conn: Redis, user, title, link):
-    article_id = str(conn.incr("article:"))  # A
+async def post_article(conn: Redis, user, title, link):
+    article_id = str(await conn.incr("article:"))  # A
 
     voted = "voted:" + article_id
-    conn.sadd(voted, user)  # B
-    conn.expire(voted, ONE_WEEK_IN_SECONDS)  # B
+    await conn.sadd(voted, user)  # B
+    await conn.expire(voted, ONE_WEEK_IN_SECONDS)  # B
 
     now = time()  # C
     article = "article:" + article_id
-    conn.hset(
+    await conn.hset(
         article,
         mapping={  # C
             "title": title,  # C
@@ -41,40 +41,40 @@ def post_article(conn: Redis, user, title, link):
         },
     )  # C
 
-    conn.zadd("score:", {article: now + VOTE_SCORE})  # D
-    conn.zadd("time:", {article: now})  # D
+    await conn.zadd("score:", {article: now + VOTE_SCORE})  # D
+    await conn.zadd("time:", {article: now})  # D
 
     return article_id
 
 ARTICLES_PER_PAGE = 10
 
-def get_articles(conn: Redis, page, order='score:'):
+async def get_articles(conn: Redis, page, order='score:'):
     start = (page-1) * ARTICLES_PER_PAGE            #A
     end = start + ARTICLES_PER_PAGE - 1             #A
 
-    ids = conn.zrevrange(order, start, end)         #B
+    ids = await conn.zrevrange(order, start, end)         #B
     articles = []
     for id in ids:                                  #C
-        article_data = conn.hgetall(id)             #C
+        article_data = await conn.hgetall(id)             #C
         if article_data:
             article_data['id'] = id.split(":")[-1]                     #C
             articles.append(article_data)               #C
 
     return articles
 
-def add_remove_groups(conn, article_id, to_add=[], to_remove=[]):
+async def add_remove_groups(conn, article_id, to_add=[], to_remove=[]):
     article = 'article:' + article_id           #A
     for group in to_add:
-        conn.sadd('group:' + group, article)    #B
+        await conn.sadd('group:' + group, article)    #B
     for group in to_remove:
-        conn.srem('group:' + group, article)    #C
+        await conn.srem('group:' + group, article)    #C
 
-def get_group_articles(conn, group, page, order='score:'):
+async def get_group_articles(conn, group, page, order='score:'):
     key = order + group                                     #A
-    if not conn.exists(key):                                #B
-        conn.zinterstore(key,                               #C
+    if not await conn.exists(key):                                #B
+        await conn.zinterstore(key,                               #C
             ['group:' + group, order],                      #C
             aggregate='max',                                #C
         )
-        conn.expire(key, 60)                                #D
-    return get_articles(conn, page, key)         
+        await conn.expire(key, 60)                                #D
+    return await get_articles(conn, page, key)         
