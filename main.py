@@ -1,4 +1,5 @@
 import fasthtml.common as fh
+import os
 
 from chapter1 import article_vote, get_articles, post_article
 from redis import Redis
@@ -22,8 +23,8 @@ def _show_article(article):
         ),
     )
 
-
-conn = Redis("localhost", 6379, decode_responses=True)
+db_server = os.environ.get("REDIS_HOST", "localhost")
+conn = Redis(db_server, 6379, decode_responses=True)
 
 
 def _show_all_articles():

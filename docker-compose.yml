@@ -1,4 +1,12 @@
 services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - '5001:5001'
+    environment:
+      - REDIS_HOST=redis
   redis:
     image: 'bitnami/redis:latest'
     environment:
