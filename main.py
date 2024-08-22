@@ -6,7 +6,7 @@ from redis.asyncio.client import Redis
 # from icecream import ic
 from faker import Faker
 
-app, rt = fh.fast_app(live=True)
+app, rt = fh.fast_app()
 
 
 def _show_article(article):
@@ -61,7 +61,7 @@ async def post1(title: str, user: str):  # # pyright: ignore[]
 async def post(article_id: str):  # # pyright: ignore[]
     # ic(article_id)
     faker = Faker()
-    user_name = faker.profile().get("username")
+    user_name = faker.pystr()
     await article_vote(conn, user_name, article_id)
     return await _show_all_articles()
 
